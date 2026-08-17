@@ -1,333 +1,253 @@
 import { useState } from 'react'
-import { motion } from 'framer-motion'
 import {
-  ResponsiveContainer,
-  Radar,
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  Cell,
+  ResponsiveContainer, Radar, RadarChart, PolarGrid, PolarAngleAxis,
+  PolarRadiusAxis, BarChart, Bar, XAxis, YAxis, Tooltip, Cell,
 } from 'recharts'
-import { Fish, BrainCircuit, AlertTriangle, Sparkles, ShieldAlert, Droplets, Zap, ShieldCheck } from 'lucide-react'
+import { Fish, BrainCircuit, AlertTriangle, Sparkles, ShieldAlert, Droplets } from 'lucide-react'
 import { SPECIES } from '../data'
+import { CarpIcon, TilapiaIcon, CatfishIcon, RohuIcon, GenericFishIcon } from '../components/FishIcons'
 
-const METRIC_LABELS = {
-  pH: 'pH',
-  temp: 'Temp °C',
-  turbidity: 'Turbidity NTU',
-  oxygen: 'O₂ mg/L',
-  ammonia: 'NH₃ mg/L',
-  nitrite: 'NO₂ mg/L',
-}
+const ICONS = { carp: CarpIcon, tilapia: TilapiaIcon, catfish: CatfishIcon, rohu: RohuIcon }
 
-const TOOLTIP_STYLE = {
-  backgroundColor: 'rgba(15, 23, 42, 0.9)',
-  border: '1px solid rgba(255,255,255,0.1)',
-  borderRadius: '12px',
-  fontSize: '11px',
-  color: '#f1f5f9',
-  backdropFilter: 'blur(10px)',
+const METRIC_LABELS = { pH: 'pH', temp: 'Temp °C', turbidity: 'Turbidity NTU', oxygen: 'O₂ mg/L', ammonia: 'NH₃ mg/L', nitrite: 'NO₂ mg/L' }
+const TOOLTIP_STYLE = { backgroundColor: 'rgba(11, 22, 40, 0.95)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 12, fontSize: 12, color: '#e2e8f0' }
+
+const DEFAULT_SPECIES = {
+  id: 'custom',
+  name: '',
+  image: '',
+  ideal: { pH: 7.0, temp: 26, turbidity: 15, oxygen: 5.5, ammonia: 0.1, nitrite: 0.5 },
+  ranges: {
+    pH: [6.5, 8.0], temp: [22, 30], turbidity: [0, 30], oxygen: [4, 7],
+    ammonia: [0, 0.2], nitrite: [0, 1.0],
+  },
+  growthDays: 180, maxWeightKg: 2.0,
+  description: 'Custom species — enter the name of any farmable fish to run a health assessment against current pond conditions.',
 }
 
 export default function FungAiView({ telemetry }) {
   const [speciesId, setSpeciesId] = useState('carp')
-  const [intervention, setIntervention] = useState('pH buffer dosing')
-  const species = SPECIES.find((s) => s.id === speciesId)
+  const [customName, setCustomName] = useState('')
+  const [intervention, setIntervention] = useState('pH buffer dosing (sodium bicarbonate)')
+  const isCustom = speciesId === 'custom'
+  const species = isCustom ? { ...DEFAULT_SPECIES, name: customName || 'Unknown Species' } : SPECIES.find((s) => s.id === speciesId)
 
-  const current = {
-    pH: telemetry.pH,
-    temp: telemetry.temp,
-    turbidity: telemetry.turbidity,
-    oxygen: telemetry.oxygen,
-    ammonia: 0.18,
-    nitrite: 0.9,
-  }
+  const current = { pH: telemetry.pH, temp: telemetry.temp, turbidity: telemetry.turbidity, oxygen: telemetry.oxygen, ammonia: 0.18, nitrite: 0.9 }
 
   const radarData = (() => {
     const norm = (key) => {
       const ideal = species.ideal[key]
       const [lo, hi] = species.ranges[key]
-      const span = hi - lo
-      const normVal = Math.max(0, Math.min(1, 1 - Math.abs(current[key] - ideal) / span))
-      return Math.round(normVal * 100)
+      return Math.round(Math.max(0, Math.min(1, 1 - Math.abs(current[key] - ideal) / (hi - lo))) * 100)
     }
-    return Object.keys(METRIC_LABELS).map((k) => ({
-      metric: METRIC_LABELS[k],
-      ideal: 100,
-      current: norm(k),
-    }))
+    return Object.keys(METRIC_LABELS).map((k) => ({ metric: METRIC_LABELS[k], ideal: 100, current: norm(k) }))
   })()
 
-  const outOfRange = Object.keys(METRIC_LABELS).filter((k) => {
-    const [lo, hi] = species.ranges[k]
-    return current[k] < lo || current[k] > hi
-  })
-
+  const outOfRange = Object.keys(METRIC_LABELS).filter((k) => { const [lo, hi] = species.ranges[k]; return current[k] < lo || current[k] > hi })
   const severity = outOfRange.length >= 3 ? 'critical' : outOfRange.length >= 1 ? 'warning' : 'healthy'
   const riskPct = Math.min(94, 20 + outOfRange.length * 22 + (telemetry.pH < 6.7 ? 15 : 0))
 
   const barData = Object.keys(METRIC_LABELS).map((k) => ({
-    metric: METRIC_LABELS[k],
-    ideal: species.ideal[k],
-    current: current[k],
-    range: species.ranges[k],
+    metric: METRIC_LABELS[k], ideal: species.ideal[k], current: current[k], range: species.ranges[k],
   }))
 
   return (
-    <div className="space-y-10">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-400 ring-1 ring-indigo-400/20">
-            <BrainCircuit size={20} />
-          </div>
-          <div>
-            <h2 className="font-display text-lg font-bold text-white">FungAi Aquaculture Core</h2>
-            <p className="text-xs font-medium text-slate-500">Neural-net predictive modelling and species optimization</p>
-          </div>
+    <div className="animate-fade-up space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="flex items-center gap-2 font-display text-lg font-semibold text-slate-100">
+            <BrainCircuit size={20} className="text-aqua-400" /> FungAi Aquaculture Assistant
+          </h2>
+          <p className="text-xs text-slate-500">AI-driven species guidance and predictive risk modelling</p>
         </div>
-        <div className="flex items-center gap-4 rounded-xl border border-white/5 bg-slate-900/50 px-4 py-2 ring-1 ring-white/10">
-          <div className="flex items-center gap-2">
-            <Zap size={14} className="text-aqua-400" />
-            <span className="text-[10px] font-black uppercase tracking-widest text-slate-300">Model: PG-V2.4</span>
-          </div>
-          <span className="text-white/10">|</span>
-          <div className="flex items-center gap-2">
-            <ShieldCheck size={14} className="text-emerald-400" />
-            <span className="text-[10px] font-black uppercase tracking-widest text-slate-300">Conf: 87%</span>
-          </div>
-        </div>
+        <span className="flex items-center gap-1.5 rounded-full bg-aqua-500/10 px-3 py-1 text-xs font-medium text-aqua-300 ring-1 ring-aqua-400/30">
+          Model: pondguard-v2 · <span className="h-1.5 w-1.5 rounded-full bg-aqua-400" />
+        </span>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
-        {/* Species selector + radar */}
-        <div className="border-gradient glass flex flex-col rounded-2xl p-6 lg:col-span-2">
-          <div className="mb-6">
-            <h3 className="font-display text-sm font-bold text-white uppercase tracking-widest">Species Target Profile</h3>
-            <p className="text-[11px] text-slate-500 mt-1">Select active stock for specialized risk analysis</p>
-          </div>
-          <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {SPECIES.map((s) => (
-              <button
-                key={s.id}
-                onClick={() => setSpeciesId(s.id)}
-                className={`rounded-xl border p-3 text-center transition-all ${
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
+        <div className="glass rounded-2xl p-5 lg:col-span-2">
+          <h3 className="mb-3 font-display text-sm font-semibold text-slate-200">Species Profile</h3>
+          <div className="mb-4 grid grid-cols-3 gap-2 sm:grid-cols-5">
+            {SPECIES.map((s) => {
+              const Icon = ICONS[s.id] || Fish
+              return (
+                <button key={s.id} onClick={() => setSpeciesId(s.id)} className={`rounded-xl px-2 py-3 text-center transition ${
                   speciesId === s.id
-                    ? 'border-aqua-400/50 bg-aqua-400/10 text-aqua-400 ring-1 ring-aqua-400/30'
-                    : 'border-white/5 bg-white/5 text-slate-500 hover:border-white/10 hover:text-slate-300'
-                }`}
-              >
-                <span className="block text-2xl mb-1">{s.image}</span>
-                <span className="block text-[10px] font-black uppercase tracking-widest">{s.name}</span>
-              </button>
-            ))}
+                    ? 'bg-aqua-500/15 ring-1 ring-aqua-400/40 text-aqua-300'
+                    : 'bg-slate-800/60 text-slate-400 hover:text-slate-200 ring-1 ring-white/5'
+                }`}>
+                  <span className="block mx-auto"><Icon size={36} /></span>
+                  <span className="mt-1 block text-[11px] font-semibold">{s.name}</span>
+                </button>
+              )
+            })}
+            <button onClick={() => setSpeciesId('custom')} className={`rounded-xl px-2 py-3 text-center transition ${
+              isCustom
+                ? 'bg-aqua-500/15 ring-1 ring-aqua-400/40 text-aqua-300'
+                : 'bg-slate-800/60 text-slate-400 hover:text-slate-200 ring-1 ring-white/5'
+            }`}>
+              <span className="block mx-auto"><GenericFishIcon size={36} /></span>
+              <span className="mt-1 block text-[11px] font-semibold">Custom</span>
+            </button>
           </div>
-          
-          <div className="flex-1 flex flex-col">
-            <div className="h-72 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <RadarChart data={radarData} outerRadius="75%">
-                  <PolarGrid stroke="rgba(255,255,255,0.05)" />
-                  <PolarAngleAxis dataKey="metric" tick={{ fill: '#64748b', fontSize: 9, fontWeight: 700 }} />
-                  <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
-                  <Radar name="CURRENT" dataKey="current" stroke="#22d3ee" fill="#22d3ee" fillOpacity={0.15} strokeWidth={3} />
-                  <Radar name="IDEAL" dataKey="ideal" stroke="#10b981" fill="none" strokeWidth={2} strokeDasharray="4 4" />
-                  <Tooltip contentStyle={TOOLTIP_STYLE} />
-                </RadarChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="mt-4 flex justify-center gap-8 text-[10px] font-black uppercase tracking-widest">
-              <span className="flex items-center gap-2 text-aqua-400">
-                <span className="h-1.5 w-4 rounded bg-aqua-400" /> Current state
-              </span>
-              <span className="flex items-center gap-2 text-emerald-500">
-                <span className="h-1.5 w-4 rounded bg-emerald-500/50 border border-emerald-500/50 border-dashed" /> Ideal band
+          {isCustom && (
+            <div className="mb-4 flex items-center gap-3">
+              <div className="relative flex-1">
+                <Fish size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                <input
+                  type="text"
+                  value={customName}
+                  onChange={(e) => setCustomName(e.target.value)}
+                  placeholder="Enter any farmable fish species…"
+                  className="w-full rounded-xl border border-white/10 bg-slate-900/60 py-2.5 pl-9 pr-4 text-sm text-slate-200 outline-none placeholder:text-slate-600 focus:ring-2 focus:ring-aqua-400/40"
+                />
+              </div>
+              <span className="shrink-0 rounded-full bg-aqua-500/10 px-2.5 py-1 text-[10px] font-medium text-aqua-300 ring-1 ring-aqua-400/20">
+                AI Ready
               </span>
             </div>
+          )}
+          <p className="mb-4 text-xs leading-relaxed text-slate-400">{species.description}</p>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <RadarChart data={radarData} outerRadius="70%">
+                <PolarGrid stroke="rgba(255,255,255,0.08)" />
+                <PolarAngleAxis dataKey="metric" tick={{ fill: '#94a3b8', fontSize: 10 }} />
+                <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
+                <Radar name="Current" dataKey="current" stroke="#22d3ee" fill="#22d3ee" fillOpacity={0.2} strokeWidth={2} />
+                <Radar name="Ideal" dataKey="ideal" stroke="#475569" fill="none" strokeWidth={1.5} strokeDasharray="4 4" />
+                <Tooltip contentStyle={TOOLTIP_STYLE} />
+              </RadarChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="mt-2 flex justify-center gap-5 text-[11px] text-slate-500">
+            <span className="flex items-center gap-1.5"><span className="h-0.5 w-4 rounded bg-aqua-400" /> Current</span>
+            <span className="flex items-center gap-1.5"><span className="h-0.5 w-4 rounded border-t border-dashed border-slate-500" /> Ideal</span>
           </div>
         </div>
 
-        {/* Ideal vs current comparison */}
-        <div className="border-gradient glass flex flex-col rounded-2xl p-6 lg:col-span-2">
-          <div className="mb-6">
-            <h3 className="font-display text-sm font-bold text-white uppercase tracking-widest">Precision Alignment</h3>
-            <p className="text-[11px] text-slate-500 mt-1">Parameter delta vs species-specific optimums</p>
-          </div>
-          <div className="flex-1 min-h-[300px]">
+        <div className="glass rounded-2xl p-5 lg:col-span-2">
+          <h3 className="mb-1 font-display text-sm font-semibold text-slate-200">Ideal vs Current</h3>
+          <p className="mb-3 text-[11px] text-slate-500">Actual readings vs optimum for {species.name}</p>
+          <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={barData} layout="vertical" margin={{ top: 0, right: 30, bottom: 0, left: 10 }}>
-                <XAxis type="number" stroke="#475569" fontSize={10} tickLine={false} axisLine={false} tick={{ fill: '#64748b', fontWeight: 600 }} />
-                <YAxis type="category" dataKey="metric" stroke="#94a3b8" fontSize={9} tickLine={false} axisLine={false} width={85} tick={{ fill: '#f1f5f9', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }} />
-                <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ fill: 'rgba(255,255,255,0.02)' }} />
-                <Bar dataKey="current" name="CURRENT" radius={[0, 4, 4, 0]} barSize={14}>
+                <XAxis type="number" stroke="#475569" fontSize={10} tickLine={false} axisLine={false} />
+                <YAxis type="category" dataKey="metric" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} width={80} />
+                <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
+                <Bar dataKey="current" name="Current" radius={[0, 4, 4, 0]} barSize={12}>
                   {barData.map((d, i) => {
                     const [lo, hi] = d.range
-                    const ok = d.current >= lo && d.current <= hi
-                    return <Cell key={i} fill={ok ? '#22d3ee' : '#f43f5e'} />
+                    return <Cell key={i} fill={d.current >= lo && d.current <= hi ? '#22d3ee' : '#f43f5e'} />
                   })}
                 </Bar>
-                <Bar dataKey="ideal" name="IDEAL" fill="rgba(16,185,129,0.15)" radius={[0, 4, 4, 0]} barSize={14} />
+                <Bar dataKey="ideal" name="Ideal" fill="rgba(148,163,184,0.3)" radius={[0, 4, 4, 0]} barSize={12} />
               </BarChart>
             </ResponsiveContainer>
           </div>
-          <div className="mt-8 grid grid-cols-2 gap-3">
+          <div className="mt-1 grid grid-cols-2 gap-2 text-[11px]">
             {Object.entries(METRIC_LABELS).map(([k, label]) => {
               const [lo, hi] = species.ranges[k]
               const ok = current[k] >= lo && current[k] <= hi
               return (
-                <div key={k} className={`flex items-center justify-between rounded-xl px-4 py-3 ring-1 ${ok ? 'bg-white/5 ring-white/5' : 'bg-rose-500/10 ring-rose-500/20'}`}>
-                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">{label}</span>
-                  <span className={`font-mono text-[11px] font-bold ${ok ? 'text-slate-200' : 'text-rose-400'}`}>
-                    {current[k]} <span className="text-[9px] text-slate-600 ml-1">({lo}-{hi})</span>
-                  </span>
-                </div>
+                <span key={k} className={`flex items-center justify-between rounded-lg px-2.5 py-1.5 ${
+                  ok ? 'bg-slate-800/60 text-slate-400' : 'bg-rose-500/10 text-rose-400'
+                }`}>
+                  {label}
+                  <span className="font-mono">{ok ? `${current[k]} (${lo}–${hi})` : `${current[k]} ! ${lo}–${hi}`}</span>
+                </span>
               )
             })}
           </div>
         </div>
       </div>
 
-      {/* Predictive alert system */}
-      <motion.div
-        layout
-        className={`border-gradient glass-strong relative overflow-hidden rounded-3xl p-8 ${
-          severity === 'critical' ? 'ring-2 ring-rose-500/30 shadow-[0_0_50px_rgba(244,63,94,0.15)]' : severity === 'warning' ? 'ring-2 ring-amber-500/20 shadow-[0_0_50px_rgba(245,158,11,0.1)]' : ''
-        }`}
-      >
-        <div className="grid-bg absolute inset-0 opacity-20 pointer-events-none" />
-        <div className="relative z-10 flex flex-col lg:flex-row items-start justify-between gap-10">
-          <div className="flex-1 flex items-start gap-6">
-            <div className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl shadow-xl ${
-              severity === 'critical' ? 'bg-rose-500/20 text-rose-400 ring-1 ring-rose-500/30' : severity === 'warning' ? 'bg-amber-500/20 text-amber-400 ring-1 ring-amber-500/30' : 'bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/30'
+      <div className={`glass relative overflow-hidden rounded-2xl p-6 ${
+        severity === 'critical' ? 'ring-2 ring-rose-500/30'
+        : severity === 'warning' ? 'ring-1 ring-amber-500/20'
+        : ''
+      }`}>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <span className={`flex h-12 w-12 items-center justify-center rounded-2xl ${
+              severity === 'critical' ? 'bg-rose-500/15 text-rose-400'
+              : severity === 'warning' ? 'bg-amber-500/15 text-amber-400'
+              : 'bg-emerald-500/15 text-emerald-400'
             }`}>
-              {severity === 'critical' ? <ShieldAlert size={32} /> : severity === 'warning' ? <AlertTriangle size={32} /> : <Sparkles size={32} />}
-            </div>
-            <div className="max-w-2xl">
-              <h3 className="font-display text-2xl font-black text-white tracking-tight">
-                {severity === 'critical'
-                  ? 'CRITICAL ECO-SYSTEM COLLAPSE RISK'
-                  : severity === 'warning'
-                    ? 'ADVERSE ENVIRONMENTAL TREND DETECTED'
-                    : 'ECO-SYSTEM HARMONY MAINTAINED'}
+              {severity === 'critical' ? <ShieldAlert size={24} /> : severity === 'warning' ? <AlertTriangle size={24} /> : <Sparkles size={24} />}
+            </span>
+            <div>
+              <h3 className="font-display text-lg font-semibold text-slate-100">
+                {severity === 'critical' ? 'Critical risk zone detected' : severity === 'warning' ? 'Risk factors present' : 'Conditions within safe range'}
               </h3>
-              <p className="mt-3 text-sm leading-relaxed text-slate-400 font-medium">
+              <p className="mt-1 max-w-xl text-sm text-slate-400">
                 {severity === 'critical'
-                  ? `Immediate intervention required. pH levels at ${telemetry.pH.toFixed(2)} are below critical survival threshold for ${species.name}. Predictive models suggest exponential stress increase within 4 hours.`
+                  ? `pH is ${telemetry.pH.toFixed(2)} — below the ${species.name} safe band (${species.ranges.pH[0]}–${species.ranges.pH[1]}). Rising turbidity compounds stress.`
                   : severity === 'warning'
-                    ? `Deterioration detected in ${outOfRange.length} parameters. Negative trends in ${outOfRange.map((k) => METRIC_LABELS[k]).join(', ')} indicate a developing stress event. Monitor closely.`
-                    : `Optimal conditions confirmed. ${species.name} metabolism is peak for current growth day. No environmental stressors identified in active window.`}
+                  ? `${outOfRange.length} parameter(s) out of band: ${outOfRange.map((k) => METRIC_LABELS[k]).join(', ')}. Trending unfavourably over the last 6 hours.`
+                  : 'All monitored parameters are within the optimal band for your species.'}
               </p>
-              
-              <div className="mt-8 flex flex-wrap gap-3">
-                <button className="rounded-xl bg-gradient-to-r from-aqua-500 to-cyan-400 px-6 py-3 text-xs font-black uppercase tracking-widest text-slate-950 shadow-xl shadow-aqua-500/25 transition hover:brightness-110 active:scale-95">
-                  Execute Intervention
-                </button>
-                <button className="rounded-xl bg-white/5 border border-white/10 px-6 py-3 text-xs font-black uppercase tracking-widest text-white transition hover:bg-white/10 active:scale-95">
-                  Regenerate Model
-                </button>
-                <button className="rounded-xl bg-white/5 border border-white/10 px-6 py-3 text-xs font-black uppercase tracking-widest text-white transition hover:bg-white/10 active:scale-95">
-                  Export Diagnostics
-                </button>
-              </div>
             </div>
           </div>
 
-          <div className="flex flex-col items-center gap-4 rounded-3xl bg-slate-950/60 p-8 ring-1 ring-white/10 min-w-[240px]">
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">48H Mortality Risk</p>
-            <div className="relative flex items-center justify-center">
-              <svg className="h-32 w-32 -rotate-90 transform" viewBox="0 0 100 100">
-                <circle cx="50" cy="50" r="40" stroke="currentColor" strokeWidth="8" fill="transparent" className="text-white/5" />
-                <motion.circle
-                  cx="50"
-                  cy="50"
-                  r="40"
-                  stroke={severity === 'critical' ? '#f43f5e' : severity === 'warning' ? '#fb923c' : '#10b981'}
-                  strokeWidth="8"
-                  strokeDasharray={2 * Math.PI * 40}
-                  initial={{ strokeDashoffset: 2 * Math.PI * 40 }}
-                  animate={{ strokeDashoffset: (2 * Math.PI * 40) * (1 - riskPct / 100) }}
-                  transition={{ duration: 2, ease: 'easeOut' }}
-                  strokeLinecap="round"
-                  fill="transparent"
-                />
-              </svg>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className={`font-display text-4xl font-black ${severity === 'critical' ? 'text-rose-400' : severity === 'warning' ? 'text-amber-400' : 'text-emerald-400'}`}>
-                  {riskPct}%
-                </span>
-              </div>
-            </div>
-            <div className="text-center">
-              <p className={`text-[10px] font-black uppercase tracking-widest ${severity === 'critical' ? 'text-rose-400' : 'text-slate-500'}`}>
-                {severity === 'critical' ? 'HIGH RISK DETECTED' : 'LOW RISK PROFILE'}
-              </p>
+          <div className="rounded-2xl bg-slate-800/60 p-5 text-center ring-1 ring-white/5">
+            <p className="text-[10px] uppercase tracking-widest text-slate-500">Mortality risk · 48 h</p>
+            <p className={`font-display text-4xl font-bold ${
+              severity === 'critical' ? 'text-rose-400' : severity === 'warning' ? 'text-amber-400' : 'text-emerald-400'
+            }`}>{riskPct}%</p>
+            <div className="mt-2 h-1.5 w-36 overflow-hidden rounded-full bg-slate-700">
+              <div className="h-full rounded-full" style={{ width: `${riskPct}%`, background: 'linear-gradient(90deg, #34d399, #fb923c, #f43f5e)' }} />
             </div>
           </div>
         </div>
 
-        <div className="mt-10 grid grid-cols-1 gap-4 md:grid-cols-3 border-t border-white/5 pt-8">
-          <div className="rounded-2xl bg-white/5 p-5 ring-1 ring-white/5">
-            <p className="mb-4 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400">
-              <Droplets size={14} className="text-aqua-400" /> AI recommendation
+        <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div className="rounded-xl bg-slate-800/40 p-4 ring-1 ring-white/5">
+            <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-slate-200">
+              <Droplets size={13} className="text-aqua-300" /> Recommended Intervention
             </p>
-            <select
-              value={intervention}
-              onChange={(e) => setIntervention(e.target.value)}
-              className="w-full rounded-xl border border-white/10 bg-slate-900 px-4 py-3 text-xs font-bold text-white outline-none focus:ring-1 focus:ring-aqua-400/50"
-            >
+            <select value={intervention} onChange={(e) => setIntervention(e.target.value)}
+              className="w-full rounded-lg border border-white/10 bg-slate-900/60 px-3 py-2 text-xs text-slate-200 outline-none focus:ring-2 focus:ring-aqua-400/40">
               <option>pH buffer dosing (sodium bicarbonate)</option>
               <option>Partial water exchange · 20%</option>
               <option>Increase aeration duty cycle</option>
               <option>Reduce feeding rate by 30%</option>
               <option>Add bio-filter / probiotics</option>
             </select>
-            <p className="mt-3 text-[10px] font-bold text-slate-500 uppercase tracking-tighter">Est dose: 1.8 kg · Automated dispatch available</p>
+            <p className="mt-2 text-[11px] text-slate-500">Dose estimate: 1.8 kg · auto-dispatch available</p>
           </div>
-
-          <div className="rounded-2xl bg-white/5 p-5 ring-1 ring-white/5">
-            <p className="mb-4 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400">
-              <Zap size={14} className="text-aqua-400" /> Model Intelligence
+          <div className="rounded-xl bg-slate-800/40 p-4 ring-1 ring-white/5">
+            <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-slate-200">
+              <BrainCircuit size={13} className="text-aqua-300" /> Model Confidence
             </p>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between font-mono text-[11px] font-bold">
-                <span className="text-slate-500">TRAINING LOAD</span>
-                <span className="text-white">4,100 HRS</span>
+            <div className="flex items-center gap-3">
+              <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-700">
+                <div className="h-full rounded-full bg-gradient-to-r from-aqua-400 to-emerald-400" style={{ width: '87%' }} />
               </div>
-              <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-900">
-                <motion.div initial={{ width: 0 }} animate={{ width: '87%' }} className="h-full rounded-full bg-aqua-400" />
-              </div>
-              <div className="flex justify-between text-[9px] font-black text-slate-600 uppercase tracking-widest">
-                <span>Last Retrain: 3D Ago</span>
-                <span className="text-aqua-400">V2.4 Stable</span>
-              </div>
+              <span className="font-mono text-sm font-semibold text-aqua-300">87%</span>
             </div>
+            <p className="mt-2 text-[11px] text-slate-500">Trained on 4,100 pond-hours · last retrain 3 days ago</p>
           </div>
-
-          <div className="rounded-2xl bg-white/5 p-5 ring-1 ring-white/5">
-            <p className="mb-4 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400">
-              <Fish size={14} className="text-aqua-400" /> Stock Profile
+          <div className="rounded-xl bg-slate-800/40 p-4 ring-1 ring-white/5">
+            <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-slate-200">
+              <Fish size={13} className="text-aqua-300" /> Stock Advisory
             </p>
-            <div className="space-y-4">
-              <div className="flex justify-between">
-                <span className="text-[10px] font-black text-slate-500 uppercase">Growth Stage</span>
-                <span className="text-xs font-bold text-white">Day {species.growthDays}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-[10px] font-black text-slate-500 uppercase">Est. Weight</span>
-                <span className="text-xs font-bold text-aqua-400">{(species.maxWeightKg * 0.62).toFixed(1)} kg</span>
-              </div>
-              <div className="mt-2 rounded-lg bg-emerald-500/10 p-2 text-center ring-1 ring-emerald-500/20">
-                <p className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">Harvest Window: 3-4 Weeks</p>
-              </div>
-            </div>
+            <p className="text-sm text-slate-200">
+              Growth day {species.growthDays} · est. mean weight <span className="font-mono text-aqua-300">{(species.maxWeightKg * 0.62).toFixed(1)} kg</span>
+            </p>
+            <p className="mt-2 text-[11px] text-slate-500">Harvest window: 3–4 weeks at current trajectory</p>
           </div>
         </div>
-      </motion.div>
+
+        <div className="mt-5 flex flex-wrap gap-2">
+          <button className="rounded-xl bg-gradient-to-r from-aqua-500 to-cyan-600 px-5 py-2.5 text-sm font-semibold text-slate-950 shadow-lg shadow-aqua-500/20 transition hover:shadow-aqua-500/30">
+            Dispatch Drone with Treatment
+          </button>
+          <button className="rounded-xl border border-white/10 bg-slate-800/60 px-5 py-2.5 text-sm font-semibold text-slate-300 transition hover:border-white/20">Re-run Prediction</button>
+          <button className="rounded-xl border border-white/10 bg-slate-800/60 px-5 py-2.5 text-sm font-semibold text-slate-300 transition hover:border-white/20">Export Health Report</button>
+        </div>
+      </div>
     </div>
   )
 }

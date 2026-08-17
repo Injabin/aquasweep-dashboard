@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Waves, Gauge as GaugeIcon, Crosshair, BrainCircuit, LineChart, Wifi, WifiOff, Menu, X, Bell, User, Settings } from 'lucide-react'
+import { Waves, Gauge as GaugeIcon, Crosshair, BrainCircuit, LineChart, Wifi, WifiOff, Menu } from 'lucide-react'
 import LiveView from './views/LiveView'
 import DroneView from './views/DroneView'
 import AnalyticsView from './views/AnalyticsView'
@@ -8,10 +7,10 @@ import FungAiView from './views/FungAiView'
 import { DAILY_ALERTS } from './data'
 
 const NAV = [
-  { id: 'live', label: 'Live Telemetry', icon: GaugeIcon, color: '#22d3ee' },
-  { id: 'drone', label: 'Drone Control', icon: Crosshair, color: '#f43f5e' },
-  { id: 'analytics', label: 'Analytics', icon: LineChart, color: '#eab308' },
-  { id: 'fungai', label: 'FungAi Assistant', icon: BrainCircuit, color: '#a78bfa' },
+  { id: 'live', label: 'Live Telemetry', icon: GaugeIcon },
+  { id: 'drone', label: 'Drone Control', icon: Crosshair },
+  { id: 'analytics', label: 'Analytics', icon: LineChart },
+  { id: 'fungai', label: 'FungAi Assistant', icon: BrainCircuit },
 ]
 
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v))
@@ -55,7 +54,7 @@ export default function App() {
           turbidity: Math.round(walk(t.turbidity, 0.6, 8, 34)),
           oxygen: round1(walk(t.oxygen, 0.08, 4, 6.5)),
           bin: Math.round(walk(t.bin, 0.4, 40, 92)),
-          battery: round1(Math.max(0, t.battery - 0.01)),
+          battery: Math.round(Math.max(0, t.battery - 0.01)),
           trash: {
             ...t.trash,
             detected: Math.random() < 0.82,
@@ -123,198 +122,101 @@ export default function App() {
   }
 
   return (
-    <div className="flex min-h-screen bg-abyss-950 font-sans text-slate-200">
-      <div className="grid-bg pointer-events-none fixed inset-0 opacity-20" />
+    <div className="flex min-h-screen">
+      {menuOpen && <div className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm lg:hidden" onClick={() => setMenuOpen(false)} />}
 
-      {/* Mobile Nav Overlay */}
-      <AnimatePresence>
-        {menuOpen && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setMenuOpen(false)}
-              className="fixed inset-0 z-40 bg-black/60 backdrop-blur-md lg:hidden"
-            />
-            <motion.aside
-              initial={{ x: '-100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '-100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="glass-strong fixed inset-y-0 left-0 z-50 w-72 flex flex-col lg:hidden"
+      <aside
+        className={`glass-strong fixed inset-y-0 left-0 z-40 flex w-64 flex-col transition-transform duration-300 lg:sticky lg:translate-x-0 ${
+          menuOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        <div className="flex items-center gap-3 border-b border-white/10 px-6 py-5">
+          <div className="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-aqua-400 to-cyan-600 shadow-lg shadow-aqua-500/30">
+            <Waves size={22} className="text-slate-950" />
+            <span className="absolute -right-1 -top-1 flex h-3 w-3">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex h-3 w-3 rounded-full border-2 border-abyss-900 bg-emerald-400" />
+            </span>
+          </div>
+          <div>
+            <p className="font-display text-lg font-bold leading-tight text-slate-100">AquaSweep</p>
+            <p className="text-[10px] uppercase tracking-[0.22em] text-aqua-400/80">Control Center</p>
+          </div>
+        </div>
+
+        <nav className="flex-1 space-y-1 px-3 py-4">
+          {NAV.map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              onClick={() => { setView(id); setMenuOpen(false) }}
+              className={`group relative flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition ${
+                view === id
+                  ? 'bg-gradient-to-r from-aqua-500/20 to-transparent text-aqua-300'
+                  : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
+              }`}
             >
-              <SidebarContent view={view} setView={setView} setMenuOpen={setMenuOpen} telemetry={telemetry} />
-            </motion.aside>
-          </>
-        )}
-      </AnimatePresence>
+              {view === id && <span className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-aqua-400 shadow-[0_0_12px_rgba(34,211,238,0.9)]" />}
+              <Icon size={18} className={view === id ? 'text-aqua-300' : 'text-slate-500 group-hover:text-slate-300'} />
+              {label}
+            </button>
+          ))}
+        </nav>
 
-      {/* Desktop Sidebar */}
-      <aside className="glass-strong hidden w-72 flex-col border-r border-white/5 lg:flex">
-        <SidebarContent view={view} setView={setView} setMenuOpen={setMenuOpen} telemetry={telemetry} />
+        <div className="mx-3 mb-4 rounded-xl bg-slate-800/50 p-3.5 ring-1 ring-white/5">
+          <p className="mb-2 flex items-center justify-between text-[10px] uppercase tracking-widest text-slate-500">
+            Pond Unit <span className="text-aqua-300">A-01</span>
+          </p>
+          <div className="space-y-1.5 text-[11px]">
+            {[
+              ['Firmware', 'v1.4.2', 'text-slate-300'],
+              ['Uptime', '6d 11h 42m', 'text-emerald-400'],
+              ['RSSI', '-48 dBm', 'text-aqua-300'],
+            ].map(([k, v, c]) => (
+              <div key={k} className="flex justify-between">
+                <span className="text-slate-500">{k}</span>
+                <span className={`font-mono ${c}`}>{v}</span>
+              </div>
+            ))}
+          </div>
+        </div>
       </aside>
 
-      {/* Main Content Area */}
-      <main className="relative flex flex-1 flex-col overflow-hidden">
-        <header className="glass sticky top-0 z-30 flex h-20 items-center justify-between border-b border-white/5 px-6 lg:px-10">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setMenuOpen(true)}
-              className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 text-slate-400 ring-1 ring-white/10 hover:text-white lg:hidden"
-            >
-              <Menu size={20} />
+      <div className="relative flex min-h-screen flex-1 flex-col">
+        <div className="grid-bg pointer-events-none absolute inset-0 opacity-60" />
+        <header className="glass relative z-10 sticky top-0 flex items-center justify-between gap-3 border-b border-white/10 px-5 py-3.5 lg:px-8">
+          <div className="flex items-center gap-3">
+            <button className="rounded-lg border border-white/10 bg-white/5 p-2 text-slate-300 lg:hidden" onClick={() => setMenuOpen(true)}>
+              <Menu size={18} />
             </button>
             <div>
-              <motion.h1
-                key={view}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="font-display text-2xl font-bold tracking-tight text-white"
-              >
-                {NAV.find((n) => n.id === view)?.label}
-              </motion.h1>
-              <div className="mt-0.5 flex items-center gap-2 text-[11px] font-medium text-slate-500">
-                <span className="flex items-center gap-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Pond A-01
-                </span>
-                <span className="text-white/10">|</span>
-                <span>Monsoon Bay</span>
-                <span className="text-white/10">|</span>
-                <span className="tabular-nums">{clock.toLocaleTimeString([], { hour12: false })}</span>
-              </div>
+              <h1 className="font-display text-xl font-bold text-slate-100">{NAV.find((n) => n.id === view)?.label}</h1>
+              <p className="hidden text-[11px] text-slate-500 sm:block">
+                Pond A-01 · Monsoon Bay · last telemetry {clock.toLocaleTimeString()}
+              </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            {/* Status Badges */}
-            <div className="hidden items-center gap-3 md:flex">
-              <div className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-[11px] font-bold ring-1 ${
-                connected ? 'bg-emerald-500/10 text-emerald-400 ring-emerald-400/20' : 'bg-rose-500/10 text-rose-400 ring-rose-400/20'
-              }`}>
-                {connected ? <Wifi size={14} /> : <WifiOff size={14} />}
-                {connected ? 'LINK STABLE' : 'RECONNECTING'}
-              </div>
-
-              <div className="flex items-center gap-3 rounded-full bg-slate-900/50 px-4 py-1.5 ring-1 ring-white/5">
-                <div className="flex h-4 w-7 overflow-hidden rounded-sm bg-slate-800 ring-1 ring-white/10">
-                  <motion.div
-                    initial={{ height: 0 }}
-                    animate={{ height: `${telemetry.battery}%` }}
-                    className={`mt-auto w-full rounded-sm ${telemetry.battery < 20 ? 'bg-rose-500' : 'bg-emerald-500'}`}
-                  />
-                </div>
-                <span className="font-mono text-xs font-bold text-slate-200">{Math.round(telemetry.battery)}%</span>
-              </div>
+          <div className="flex items-center gap-3">
+            <div className={`hidden items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold sm:flex ${
+              connected ? 'bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-400/30' : 'bg-rose-500/10 text-rose-400 ring-1 ring-rose-400/30'
+            }`}>
+              {connected ? <Wifi size={13} /> : <WifiOff size={13} />}
+              {connected ? 'Online' : 'Reconnecting'}
             </div>
-
-            <div className="flex items-center gap-2 border-l border-white/5 pl-4">
-              <HeaderAction icon={<Bell size={18} />} hasDot />
-              <HeaderAction icon={<User size={18} />} />
-              <HeaderAction icon={<Settings size={18} />} />
+            <div className="hidden items-center gap-2 rounded-full bg-slate-800/70 px-3 py-1.5 ring-1 ring-white/10 md:flex">
+              <div className="relative h-5 w-8 overflow-hidden rounded-sm border border-emerald-400/40 p-0.5">
+                <div
+                  className="absolute bottom-0 left-0 w-full rounded-sm bg-gradient-to-t from-emerald-500 to-emerald-300"
+                  style={{ height: `${telemetry.battery}%` }}
+                />
+              </div>
+              <span className="font-mono text-xs font-semibold text-slate-200">{telemetry.battery}%</span>
             </div>
           </div>
         </header>
 
-        <div className="relative flex-1 overflow-y-auto overflow-x-hidden p-6 lg:p-10">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={view}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-            >
-              {renderView()}
-            </motion.div>
-          </AnimatePresence>
-        </div>
-      </main>
+        <main className="relative z-10 flex-1 px-5 py-6 lg:px-8">{renderView()}</main>
+      </div>
     </div>
-  )
-}
-
-function SidebarContent({ view, setView, setMenuOpen, telemetry }) {
-  return (
-    <>
-      <div className="flex items-center gap-4 px-8 py-8">
-        <div className="border-gradient relative flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-aqua-400 to-cyan-600 shadow-xl shadow-aqua-500/20">
-          <Waves size={24} className="text-slate-950" />
-        </div>
-        <div>
-          <h2 className="font-display text-xl font-black tracking-tight text-white">AquaSweep</h2>
-          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-aqua-400">Dashboard v2.0</p>
-        </div>
-      </div>
-
-      <nav className="flex-1 space-y-1.5 px-4 py-6">
-        {NAV.map(({ id, label, icon: Icon, color }) => (
-          <button
-            key={id}
-            onClick={() => {
-              setView(id)
-              setMenuOpen(false)
-            }}
-            className={`group relative flex w-full items-center gap-4 rounded-xl px-4 py-3.5 text-sm font-bold transition-all ${
-              view === id
-                ? 'bg-white/5 text-white ring-1 ring-white/10'
-                : 'text-slate-500 hover:bg-white/[0.02] hover:text-slate-300'
-            }`}
-          >
-            {view === id && (
-              <motion.div
-                layoutId="nav-glow"
-                className="absolute inset-0 rounded-xl bg-gradient-to-r from-aqua-500/10 to-transparent opacity-50"
-              />
-            )}
-            <div
-              className={`flex h-8 w-8 items-center justify-center rounded-lg ring-1 transition-all ${
-                view === id ? 'bg-white/10 ring-white/20' : 'bg-transparent ring-transparent group-hover:ring-white/10'
-              }`}
-            >
-              <Icon size={18} style={{ color: view === id ? color : 'currentColor' }} />
-            </div>
-            {label}
-            {view === id && (
-              <motion.div
-                layoutId="active-indicator"
-                className="absolute right-4 h-1.5 w-1.5 rounded-full bg-aqua-400 shadow-[0_0_8px_#22d3ee]"
-              />
-            )}
-          </button>
-        ))}
-      </nav>
-
-      <div className="mt-auto px-6 py-8">
-        <div className="border-gradient glass-strong rounded-2xl p-5">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">System Unit</span>
-            <span className="rounded-md bg-aqua-400/10 px-1.5 py-0.5 font-mono text-[10px] font-bold text-aqua-400">A-01</span>
-          </div>
-          <div className="mt-4 space-y-3">
-            <div className="flex justify-between">
-              <span className="text-[11px] font-bold text-slate-500">UPTIME</span>
-              <span className="font-mono text-[11px] font-bold text-emerald-400">6d 11h 42m</span>
-            </div>
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-900/50 ring-1 ring-white/5">
-              <div className="h-full w-2/3 rounded-full bg-gradient-to-r from-aqua-600 to-aqua-400" />
-            </div>
-            <div className="flex justify-between">
-              <span className="text-[11px] font-bold text-slate-500">SIGNAL</span>
-              <span className="font-mono text-[11px] font-bold text-aqua-400">-48 dBm</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </>
-  )
-}
-
-function HeaderAction({ icon, hasDot }) {
-  return (
-    <button className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 text-slate-400 ring-1 ring-white/10 transition hover:bg-white/10 hover:text-white">
-      {icon}
-      {hasDot && <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full border-2 border-abyss-900 bg-rose-500" />}
-    </button>
   )
 }
