@@ -100,7 +100,7 @@ export default function FungAiView({ telemetry }) {
                   value={customName}
                   onChange={(e) => setCustomName(e.target.value)}
                   placeholder="Enter any farmable fish species…"
-                  className="w-full rounded-xl border border-white/10 bg-slate-900/60 py-2.5 pl-9 pr-4 text-sm text-slate-200 outline-none placeholder:text-slate-600 focus:ring-2 focus:ring-aqua-400/40"
+                  className="w-full rounded-xl border border-slate-700 bg-slate-900 py-2.5 pl-9 pr-4 text-sm text-slate-200 outline-none placeholder:text-slate-500 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/50"
                 />
               </div>
               <span className="shrink-0 rounded-full bg-aqua-500/10 px-2.5 py-1 text-[10px] font-medium text-aqua-300 ring-1 ring-aqua-400/20">
@@ -208,12 +208,12 @@ export default function FungAiView({ telemetry }) {
               <Droplets size={13} className="text-aqua-300" /> Recommended Intervention
             </p>
             <select value={intervention} onChange={(e) => setIntervention(e.target.value)}
-              className="w-full rounded-lg border border-white/10 bg-slate-900/60 px-3 py-2 text-xs text-slate-200 outline-none focus:ring-2 focus:ring-aqua-400/40">
-              <option>pH buffer dosing (sodium bicarbonate)</option>
-              <option>Partial water exchange · 20%</option>
-              <option>Increase aeration duty cycle</option>
-              <option>Reduce feeding rate by 30%</option>
-              <option>Add bio-filter / probiotics</option>
+              className="w-full appearance-none rounded-lg border border-slate-700 bg-slate-900 px-3 py-2.5 text-xs text-slate-200 outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/50">
+              <option className="bg-slate-900 text-slate-200">pH buffer dosing (sodium bicarbonate)</option>
+              <option className="bg-slate-900 text-slate-200">Partial water exchange · 20%</option>
+              <option className="bg-slate-900 text-slate-200">Increase aeration duty cycle</option>
+              <option className="bg-slate-900 text-slate-200">Reduce feeding rate by 30%</option>
+              <option className="bg-slate-900 text-slate-200">Add bio-filter / probiotics</option>
             </select>
             <p className="mt-2 text-[11px] text-slate-500">Dose estimate: 1.8 kg · auto-dispatch available</p>
           </div>

@@ -81,20 +81,47 @@ export const FishArt = ({ type, active = false, className = "w-14 h-9" }) => {
         </svg>
       );
 
+    case 'custom':
+      return (
+        <svg viewBox="0 0 80 48" fill="none" className={className} style={{ filter: glow }}>
+          <path
+            d="M12 24 L 32 10 L 58 14 L 76 8 L 68 24 L 76 40 L 58 34 L 32 38 Z"
+            fill={fill}
+            stroke={stroke}
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M32 10 L 32 38 M 58 14 L 58 34 M 12 24 L 58 14 M 12 24 L 58 34 M 32 24 L 68 24"
+            stroke={stroke}
+            strokeWidth="1.2"
+            strokeOpacity="0.4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <circle cx="32" cy="10" r="1.5" fill={stroke} />
+          <circle cx="32" cy="38" r="1.5" fill={stroke} />
+          <circle cx="58" cy="14" r="1.5" fill={stroke} />
+          <circle cx="58" cy="34" r="1.5" fill={stroke} />
+          <circle cx="32" cy="24" r="2" fill={stroke} />
+          <circle cx="68" cy="24" r="2" fill={stroke} />
+        </svg>
+      );
+
     default:
       return (
         <svg viewBox="0 0 80 48" fill="none" className={className} style={{ filter: glow }}>
           <path
-            d="M10 24 L 26 12 L 56 16 L 72 9 L 66 24 L 72 39 L 56 32 L 26 36 Z"
+            d="M12 24 L 32 10 L 58 14 L 76 8 L 68 24 L 76 40 L 58 34 L 32 38 Z"
             fill={fill}
             stroke={stroke}
-            strokeWidth="1.6"
+            strokeWidth="1.8"
             strokeLinecap="round"
             strokeLinejoin="round"
-            strokeDasharray="4 3"
           />
-          <circle cx="24" cy="24" r="2.5" stroke={stroke} strokeWidth="1.5" />
-          <path d="M38 18 L 48 24 L 38 30" stroke={stroke} strokeWidth="1.4" strokeLinecap="round" />
+          <circle cx="32" cy="24" r="2" fill={stroke} />
+          <circle cx="68" cy="24" r="2" fill={stroke} />
         </svg>
       );
   }
