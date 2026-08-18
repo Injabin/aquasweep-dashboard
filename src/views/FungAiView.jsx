@@ -5,9 +5,7 @@ import {
 } from 'recharts'
 import { Fish, BrainCircuit, AlertTriangle, Sparkles, ShieldAlert, Droplets } from 'lucide-react'
 import { SPECIES } from '../data'
-import { CarpIcon, TilapiaIcon, CatfishIcon, RohuIcon, GenericFishIcon } from '../components/FishIcons'
-
-const ICONS = { carp: CarpIcon, tilapia: TilapiaIcon, catfish: CatfishIcon, rohu: RohuIcon }
+import { FishArt } from '../components/FishArtwork'
 
 const METRIC_LABELS = { pH: 'pH', temp: 'Temp °C', turbidity: 'Turbidity NTU', oxygen: 'O₂ mg/L', ammonia: 'NH₃ mg/L', nitrite: 'NO₂ mg/L' }
 const TOOLTIP_STYLE = { backgroundColor: 'rgba(11, 22, 40, 0.95)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 12, fontSize: 12, color: '#e2e8f0' }
@@ -70,24 +68,26 @@ export default function FungAiView({ telemetry }) {
           <h3 className="mb-3 font-display text-sm font-semibold text-slate-200">Species Profile</h3>
           <div className="mb-4 grid grid-cols-3 gap-2 sm:grid-cols-5">
             {SPECIES.map((s) => {
-              const Icon = ICONS[s.id] || Fish
+              const sel = speciesId === s.id
               return (
-                <button key={s.id} onClick={() => setSpeciesId(s.id)} className={`rounded-xl px-2 py-3 text-center transition ${
-                  speciesId === s.id
-                    ? 'bg-aqua-500/15 ring-1 ring-aqua-400/40 text-aqua-300'
-                    : 'bg-slate-800/60 text-slate-400 hover:text-slate-200 ring-1 ring-white/5'
-                }`}>
-                  <span className="block mx-auto"><Icon size={36} /></span>
+                <button key={s.id} onClick={() => setSpeciesId(s.id)}
+                  className={`rounded-xl border px-2 py-3 text-center transition-all duration-300 ${
+                    sel
+                      ? 'border-cyan-400 bg-cyan-950/25 shadow-[0_0_20px_rgba(34,211,238,0.18)] text-aqua-300'
+                      : 'border-slate-800 bg-slate-950/40 text-slate-400 hover:border-slate-700 hover:bg-slate-900/60'
+                  }`}>
+                  <span className="block mx-auto"><FishArt type={s.id} active={sel} className="w-14 h-9" /></span>
                   <span className="mt-1 block text-[11px] font-semibold">{s.name}</span>
                 </button>
               )
             })}
-            <button onClick={() => setSpeciesId('custom')} className={`rounded-xl px-2 py-3 text-center transition ${
-              isCustom
-                ? 'bg-aqua-500/15 ring-1 ring-aqua-400/40 text-aqua-300'
-                : 'bg-slate-800/60 text-slate-400 hover:text-slate-200 ring-1 ring-white/5'
-            }`}>
-              <span className="block mx-auto"><GenericFishIcon size={36} /></span>
+            <button onClick={() => setSpeciesId('custom')}
+              className={`rounded-xl border px-2 py-3 text-center transition-all duration-300 ${
+                isCustom
+                  ? 'border-cyan-400 bg-cyan-950/25 shadow-[0_0_20px_rgba(34,211,238,0.18)] text-aqua-300'
+                  : 'border-slate-800 bg-slate-950/40 text-slate-400 hover:border-slate-700 hover:bg-slate-900/60'
+              }`}>
+              <span className="block mx-auto"><FishArt type="custom" active={isCustom} className="w-14 h-9" /></span>
               <span className="mt-1 block text-[11px] font-semibold">Custom</span>
             </button>
           </div>
