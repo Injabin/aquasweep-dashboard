@@ -1,14 +1,35 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import {
   ResponsiveContainer, Radar, RadarChart, PolarGrid, PolarAngleAxis,
   PolarRadiusAxis, BarChart, Bar, XAxis, YAxis, Tooltip, Cell,
 } from 'recharts'
-import { Fish, BrainCircuit, AlertTriangle, Sparkles, ShieldAlert, Droplets } from 'lucide-react'
+import { Fish, BrainCircuit, AlertTriangle, Sparkles, ShieldAlert, Droplets, Search } from 'lucide-react'
 import { SPECIES } from '../data'
 import { FishArt } from '../components/FishArtwork'
 
+const COMMON_FISH = [
+  'Barramundi', 'Trout', 'Salmon', 'Tuna', 'Mackerel', 'Snapper', 'Grouper',
+  'Pangasius', 'Milkfish', 'Mullet', 'Sturgeon', 'Eel', 'Pike', 'Cod',
+  'Haddock', 'Flounder', 'Swordfish', 'Mahi-Mahi', 'Amur Carp', 'Silver Carp',
+  'Grass Carp', 'Bighead Carp', 'Pacu', 'Pirarucu', 'Arapaima', 'Tilapia',
+  'Catfish', 'Rohu', 'Mrigal', 'Kalibaush', 'Pabda', 'Singi', 'Magur',
+]
+
 const METRIC_LABELS = { pH: 'pH', temp: 'Temp °C', turbidity: 'Turbidity NTU', oxygen: 'O₂ mg/L', ammonia: 'NH₃ mg/L', nitrite: 'NO₂ mg/L' }
-const TOOLTIP_STYLE = { backgroundColor: 'rgba(11, 22, 40, 0.95)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 12, fontSize: 12, color: '#e2e8f0' }
+
+function GlassTooltip({ active, payload, label }) {
+  if (!active || !payload || !payload.length) return null
+  return (
+    <div className="z-50 rounded-xl border border-slate-700 bg-slate-900/95 p-4 shadow-2xl backdrop-blur-xl">
+      <p className="mb-2 text-xs font-semibold text-slate-400">{label}</p>
+      {payload.map((entry, index) => (
+        <p key={index} className="font-mono text-sm" style={{ color: entry.color || '#22d3ee' }}>
+          {entry.name}: {entry.value}
+        </p>
+      ))}
+    </div>
+  )
+}
 
 const DEFAULT_SPECIES = {
   id: 'custom',
@@ -26,9 +47,21 @@ const DEFAULT_SPECIES = {
 export default function FungAiView({ telemetry }) {
   const [speciesId, setSpeciesId] = useState('carp')
   const [customName, setCustomName] = useState('')
+  const [comboOpen, setComboOpen] = useState(false)
+  const comboRef = useRef(null)
   const [intervention, setIntervention] = useState('pH buffer dosing (sodium bicarbonate)')
   const isCustom = speciesId === 'custom'
   const species = isCustom ? { ...DEFAULT_SPECIES, name: customName || 'Unknown Species' } : SPECIES.find((s) => s.id === speciesId)
+
+  const filteredFish = customName.trim()
+    ? COMMON_FISH.filter((f) => f.toLowerCase().includes(customName.toLowerCase()))
+    : COMMON_FISH
+
+  useEffect(() => {
+    const handler = (e) => { if (comboRef.current && !comboRef.current.contains(e.target)) setComboOpen(false) }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
 
   const current = { pH: telemetry.pH, temp: telemetry.temp, turbidity: telemetry.turbidity, oxygen: telemetry.oxygen, ammonia: 0.18, nitrite: 0.9 }
 
@@ -92,20 +125,36 @@ export default function FungAiView({ telemetry }) {
             </button>
           </div>
           {isCustom && (
-            <div className="mb-4 flex items-center gap-3">
+            <div className="relative mb-4 mt-4 flex items-center gap-2" ref={comboRef}>
               <div className="relative flex-1">
-                <Fish size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
                 <input
                   type="text"
                   value={customName}
-                  onChange={(e) => setCustomName(e.target.value)}
-                  placeholder="Enter any farmable fish species…"
-                  className="w-full rounded-xl border border-slate-700 bg-slate-900 py-2.5 pl-9 pr-4 text-sm text-slate-200 outline-none placeholder:text-slate-500 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/50"
+                  onChange={(e) => { setCustomName(e.target.value); setComboOpen(true) }}
+                  onFocus={() => setComboOpen(true)}
+                  placeholder="Search or enter common fish name…"
+                  className="w-full rounded-xl border border-slate-700 bg-slate-900/50 py-2.5 pl-10 pr-4 text-sm text-slate-200 outline-none transition-all placeholder:text-slate-600 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/50"
                 />
+                {comboOpen && filteredFish.length > 0 && (
+                  <ul className="absolute left-0 top-full z-50 mt-2 max-h-48 w-full overflow-y-auto rounded-xl border border-slate-700 bg-slate-900/95 py-1 shadow-2xl backdrop-blur-xl">
+                    {filteredFish.slice(0, 12).map((fish) => (
+                      <li key={fish}
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => { setCustomName(fish); setComboOpen(false) }}
+                        className="cursor-pointer px-4 py-2 text-sm text-slate-300 hover:bg-slate-800 hover:text-cyan-300">
+                        {fish}
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
-              <span className="shrink-0 rounded-full bg-aqua-500/10 px-2.5 py-1 text-[10px] font-medium text-aqua-300 ring-1 ring-aqua-400/20">
-                AI Ready
-              </span>
+              <button
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => { if (customName.trim()) setComboOpen(false) }}
+                className="whitespace-nowrap rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-5 py-2.5 text-sm font-semibold text-cyan-400 transition-all hover:bg-cyan-500/20 active:scale-95">
+                Add
+              </button>
             </div>
           )}
           <p className="mb-4 text-xs leading-relaxed text-slate-400">{species.description}</p>
@@ -117,7 +166,7 @@ export default function FungAiView({ telemetry }) {
                 <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
                 <Radar name="Current" dataKey="current" stroke="#22d3ee" fill="#22d3ee" fillOpacity={0.2} strokeWidth={2} />
                 <Radar name="Ideal" dataKey="ideal" stroke="#475569" fill="none" strokeWidth={1.5} strokeDasharray="4 4" />
-                <Tooltip contentStyle={TOOLTIP_STYLE} />
+                <Tooltip content={<GlassTooltip />} />
               </RadarChart>
             </ResponsiveContainer>
           </div>
@@ -135,7 +184,7 @@ export default function FungAiView({ telemetry }) {
               <BarChart data={barData} layout="vertical" margin={{ top: 0, right: 30, bottom: 0, left: 10 }}>
                 <XAxis type="number" stroke="#475569" fontSize={10} tickLine={false} axisLine={false} />
                 <YAxis type="category" dataKey="metric" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} width={80} />
-                <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
+                <Tooltip content={<GlassTooltip />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
                 <Bar dataKey="current" name="Current" radius={[0, 4, 4, 0]} barSize={12}>
                   {barData.map((d, i) => {
                     const [lo, hi] = d.range
@@ -208,12 +257,12 @@ export default function FungAiView({ telemetry }) {
               <Droplets size={13} className="text-aqua-300" /> Recommended Intervention
             </p>
             <select value={intervention} onChange={(e) => setIntervention(e.target.value)}
-              className="w-full appearance-none rounded-lg border border-slate-700 bg-slate-900 px-3 py-2.5 text-xs text-slate-200 outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/50">
-              <option className="bg-slate-900 text-slate-200">pH buffer dosing (sodium bicarbonate)</option>
-              <option className="bg-slate-900 text-slate-200">Partial water exchange · 20%</option>
-              <option className="bg-slate-900 text-slate-200">Increase aeration duty cycle</option>
-              <option className="bg-slate-900 text-slate-200">Reduce feeding rate by 30%</option>
-              <option className="bg-slate-900 text-slate-200">Add bio-filter / probiotics</option>
+              className="w-full appearance-none rounded-lg border border-slate-700 bg-slate-900 p-2.5 text-xs text-slate-200 outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/50 [&>option]:bg-slate-900 [&>option]:text-slate-200">
+              <option>pH buffer dosing (sodium bicarbonate)</option>
+              <option>Partial water exchange · 20%</option>
+              <option>Increase aeration duty cycle</option>
+              <option>Reduce feeding rate by 30%</option>
+              <option>Add bio-filter / probiotics</option>
             </select>
             <p className="mt-2 text-[11px] text-slate-500">Dose estimate: 1.8 kg · auto-dispatch available</p>
           </div>

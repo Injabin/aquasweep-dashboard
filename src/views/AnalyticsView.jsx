@@ -12,7 +12,19 @@ const METRICS = {
   oxygen: { color: '#34d399', label: 'Dissolved O₂', unit: 'mg/L', ref: 5.5 },
 }
 
-const TOOLTIP_STYLE = { backgroundColor: 'rgba(11, 22, 40, 0.95)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 12, fontSize: 12, color: '#e2e8f0' }
+function GlassTooltip({ active, payload, label }) {
+  if (!active || !payload || !payload.length) return null
+  return (
+    <div className="z-50 rounded-xl border border-slate-700 bg-slate-900/95 p-4 shadow-2xl backdrop-blur-xl">
+      <p className="mb-2 text-xs font-semibold text-slate-400">{label}</p>
+      {payload.map((entry, index) => (
+        <p key={index} className="font-mono text-sm" style={{ color: entry.color || '#22d3ee' }}>
+          {entry.name}: {entry.value}
+        </p>
+      ))}
+    </div>
+  )
+}
 
 export default function AnalyticsView({ history }) {
   const [range, setRange] = useState('24h')
@@ -80,7 +92,7 @@ export default function AnalyticsView({ history }) {
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
               <XAxis dataKey="t" stroke="#475569" fontSize={10} tickLine={false} axisLine={false} minTickGap={40} />
               <YAxis stroke="#475569" fontSize={10} tickLine={false} axisLine={false} domain={['auto', 'auto']} />
-              <Tooltip contentStyle={TOOLTIP_STYLE} />
+              <Tooltip content={<GlassTooltip />} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
               <ReferenceLine y={m.ref} stroke={m.color} strokeDasharray="4 4" strokeOpacity={0.5}
                 label={{ value: 'Ideal', fontSize: 10, fill: m.color, position: 'insideTopRight' }} />
@@ -112,7 +124,7 @@ export default function AnalyticsView({ history }) {
                 <XAxis dataKey="t" stroke="#475569" fontSize={10} tickLine={false} axisLine={false} minTickGap={40} />
                 <YAxis yAxisId="left" stroke="#475569" fontSize={10} tickLine={false} axisLine={false} />
                 <YAxis yAxisId="right" orientation="right" stroke="#475569" fontSize={10} tickLine={false} axisLine={false} />
-                <Tooltip contentStyle={TOOLTIP_STYLE} />
+                <Tooltip content={<GlassTooltip />} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
                 <Area yAxisId="left" type="monotone" dataKey="pH" stroke="#f43f5e" strokeWidth={2} fill="url(#gpH)" name="pH" />
                 <Area yAxisId="right" type="monotone" dataKey="temp" stroke="#fb923c" strokeWidth={2} fill="url(#gTemp)" name="Temp °C" />
@@ -131,7 +143,7 @@ export default function AnalyticsView({ history }) {
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
                 <XAxis dataKey="day" stroke="#475569" fontSize={10} tickLine={false} axisLine={false} />
                 <YAxis stroke="#475569" fontSize={10} tickLine={false} axisLine={false} />
-                <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
+                <Tooltip content={<GlassTooltip />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
                 <Bar dataKey="this" fill="#22d3ee" radius={[4, 4, 0, 0]} name="This week" />
                 <Bar dataKey="last" fill="rgba(148,163,184,0.3)" radius={[4, 4, 0, 0]} name="Last week" />
