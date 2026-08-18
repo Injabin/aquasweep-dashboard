@@ -73,8 +73,8 @@ export default function FungAiView({ telemetry }) {
                 <button key={s.id} onClick={() => setSpeciesId(s.id)}
                   className={`rounded-xl border px-2 py-3 text-center transition-all duration-300 ${
                     sel
-                      ? 'border-cyan-400 bg-cyan-950/25 shadow-[0_0_20px_rgba(34,211,238,0.18)] text-aqua-300'
-                      : 'border-slate-800 bg-slate-950/40 text-slate-400 hover:border-slate-700 hover:bg-slate-900/60'
+                      ? 'border-cyan-400/90 bg-cyan-950/30 shadow-[0_0_18px_rgba(34,211,238,0.2)] text-aqua-300'
+                      : 'border-slate-800/80 bg-slate-950/60 text-slate-400 hover:border-slate-700 hover:bg-slate-900/60'
                   }`}>
                   <span className="block mx-auto"><FishArt type={s.id} active={sel} className="w-14 h-9" /></span>
                   <span className="mt-1 block text-[11px] font-semibold">{s.name}</span>
@@ -84,8 +84,8 @@ export default function FungAiView({ telemetry }) {
             <button onClick={() => setSpeciesId('custom')}
               className={`rounded-xl border px-2 py-3 text-center transition-all duration-300 ${
                 isCustom
-                  ? 'border-cyan-400 bg-cyan-950/25 shadow-[0_0_20px_rgba(34,211,238,0.18)] text-aqua-300'
-                  : 'border-slate-800 bg-slate-950/40 text-slate-400 hover:border-slate-700 hover:bg-slate-900/60'
+                  ? 'border-cyan-400/90 bg-cyan-950/30 shadow-[0_0_18px_rgba(34,211,238,0.2)] text-aqua-300'
+                  : 'border-slate-800/80 bg-slate-950/60 text-slate-400 hover:border-slate-700 hover:bg-slate-900/60'
               }`}>
               <span className="block mx-auto"><FishArt type="custom" active={isCustom} className="w-14 h-9" /></span>
               <span className="mt-1 block text-[11px] font-semibold">Custom</span>
